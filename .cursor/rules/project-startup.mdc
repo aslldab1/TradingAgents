@@ -1,0 +1,257 @@
+---
+alwaysApply: true
+description: TradingAgents项目启动和配置指南
+---
+
+# TradingAgents 项目启动文档
+
+## 环境要求
+
+### Python版本
+- **最低要求**: Python 3.10+
+- **推荐版本**: Python 3.13
+- **虚拟环境**: 强烈建议使用虚拟环境
+
+### 系统依赖
+- 支持的操作系统: macOS, Linux, Windows
+- 内存要求: 建议8GB以上
+- 网络要求: 需要稳定的网络连接以访问API服务
+
+## 安装步骤
+
+### 1. 克隆项目
+```bash
+git clone https://github.com/TauricResearch/TradingAgents.git
+cd TradingAgents
+```
+
+### 2. 创建虚拟环境
+```bash
+# 使用conda (推荐)
+conda create -n tradingagents python=3.13
+conda activate tradingagents
+
+# 或使用venv
+python -m venv tradingagents_env
+source tradingagents_env/bin/activate  # Linux/macOS
+# 或
+tradingagents_env\Scripts\activate  # Windows
+```
+
+### 3. 安装依赖
+```bash
+# 使用pip安装
+pip install -r requirements.txt
+
+# 或使用uv (如果可用)
+uv sync
+```
+
+## 必需API配置
+
+### 1. FinnHub API (金融数据)
+```bash
+export FINNHUB_API_KEY=$YOUR_FINNHUB_API_KEY
+```
+- **用途**: 获取金融数据、新闻、公司信息
+- **免费额度**: 支持免费层使用
+- **获取方式**: 访问 [FinnHub官网](https://finnhub.io/) 注册获取API密钥
+
+### 2. OpenAI API (LLM服务)
+```bash
+export OPENAI_API_KEY=$YOUR_OPENAI_API_KEY
+```
+- **用途**: 所有代理的LLM推理
+- **推荐模型**: 
+  - 深度思考: `o4-mini` (成本较低)
+  - 快速思考: `gpt-4o-mini` (成本较低)
+- **获取方式**: 访问 [OpenAI官网](https://platform.openai.com/) 获取API密钥
+
+### 3. 其他可选API
+- **Google API**: 如需使用Gemini模型
+- **Anthropic API**: 如需使用Claude模型
+- **Reddit API**: 如需获取Reddit数据
+
+## 启动方式
+
+### 1. CLI交互式启动
+```bash
+python -m cli.main
+```
+- 提供图形化配置界面
+- 可选择股票代码、日期、LLM模型等
+- 实时显示代理运行进度
+
+### 2. 编程方式启动
+```python
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.default_config import DEFAULT_CONFIG
+
+# 使用默认配置
+ta = TradingAgentsGraph(debug=True, config=DEFAULT_CONFIG.copy())
+
+# 执行交易分析
+_, decision = ta.propagate("NVDA", "2024-05-10")
+print(decision)
+```
+
+### 3. 自定义配置启动
+```python
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.default_config import DEFAULT_CONFIG
+
+# 创建自定义配置
+config = DEFAULT_CONFIG.copy()
+config["llm_provider"] = "google"  # 使用Google模型
+config["deep_think_llm"] = "gemini-2.0-flash"
+config["quick_think_llm"] = "gemini-2.0-flash"
+config["max_debate_rounds"] = 2  # 增加辩论轮数
+config["online_tools"] = True  # 启用在线工具
+
+# 初始化并运行
+ta = TradingAgentsGraph(debug=True, config=config)
+_, decision = ta.propagate("AAPL", "2024-05-10")
+```
+
+## 配置选项详解
+
+### LLM提供商配置
+- **OpenAI**: `"llm_provider": "openai"`
+- **Anthropic**: `"llm_provider": "anthropic"`
+- **Google**: `"llm_provider": "google"`
+- **Ollama**: `"llm_provider": "ollama"`
+
+### 模型配置
+- **深度思考模型**: `"deep_think_llm"` - 用于复杂分析
+- **快速思考模型**: `"quick_think_llm"` - 用于快速响应
+- **后端URL**: `"backend_url"` - API端点地址
+
+### 工作流配置
+- **最大辩论轮数**: `"max_debate_rounds"` - 研究员辩论轮数
+- **最大风险讨论轮数**: `"max_risk_discuss_rounds"` - 风险讨论轮数
+- **在线工具**: `"online_tools"` - 是否使用实时数据
+
+### 数据配置
+- **项目目录**: `"project_dir"` - 项目根目录
+- **结果目录**: `"results_dir"` - 结果输出目录
+- **数据目录**: `"data_dir"` - 离线数据目录
+- **缓存目录**: `"data_cache_dir"` - 数据缓存目录
+
+## 常见启动问题
+
+### 1. Python版本兼容性问题
+**问题**: 系统只有Python 3.9.6，但文档建议3.10+
+**解决**: 
+- 可以使用Python 3.9.6，但需要处理依赖兼容性
+- 建议升级到Python 3.10+以获得更好的兼容性
+- 如果使用Python 3.9，需要手动安装缺失的依赖
+
+### 2. 依赖安装问题
+**错误**: `ModuleNotFoundError`
+**解决**: 
+```bash
+# 方法1: 直接安装requirements.txt（推荐）
+pip install -r requirements.txt
+
+# 方法2: 如果遇到依赖冲突，分批安装
+pip install pandas yfinance requests tqdm pytz
+pip install langchain langchain-openai langchain-community langchain-core
+pip install langgraph finnhub-python stockstats feedparser
+pip install rich questionary chainlit typer
+pip install langchain_anthropic langchain-google-genai
+```
+
+### 3. ChromaDB依赖问题
+**错误**: `ModuleNotFoundError: No module named 'overrides'`
+**解决**: 
+```bash
+# 安装ChromaDB的完整依赖
+pip install overrides bcrypt build importlib-resources jsonschema kubernetes mmh3 onnxruntime posthog pybase64 pypika tokenizers
+```
+
+### 4. API密钥问题
+**错误**: `API key not found`
+**解决**: 确保正确设置环境变量
+```bash
+echo $OPENAI_API_KEY
+echo $FINNHUB_API_KEY
+```
+
+### 5. 网络连接问题
+**错误**: `Connection timeout`
+**解决**: 
+- 检查网络连接
+- 配置代理（如需要）
+- 使用离线模式：`config["online_tools"] = False`
+
+### 6. 内存不足问题
+**错误**: `Out of memory`
+**解决**:
+- 减少并发代理数量
+- 使用更小的模型
+- 增加系统内存
+
+### 7. 数据访问问题
+**错误**: `Data not found`
+**解决**:
+- 检查数据目录配置
+- 确保有网络访问权限
+- 使用在线模式获取实时数据
+
+## 实际启动经验总结
+
+### 成功启动的完整步骤
+1. **环境检查**: 确认Python版本（3.9.6可用，但建议3.10+）
+2. **虚拟环境**: 创建并激活虚拟环境
+3. **依赖安装**: 使用`pip install -r requirements.txt`安装所有依赖
+4. **缺失依赖**: 手动安装ChromaDB相关依赖
+5. **启动测试**: 运行`python -m cli.main`验证启动
+
+### 关键经验
+- **依赖管理**: 应该直接使用requirements.txt，而不是逐个安装
+- **ChromaDB**: 需要额外的依赖包，特别是overrides模块
+- **Python版本**: 3.9.6可以工作，但3.10+更稳定
+- **CLI启动**: 项目成功启动后会显示欢迎界面和配置选项
+
+## 性能优化建议
+
+### 1. 成本优化
+- 使用较小的模型进行测试（如gpt-4o-mini）
+- 减少辩论轮数
+- 使用缓存数据而非实时数据
+
+### 2. 速度优化
+- 启用并行处理
+- 使用更快的模型
+- 优化网络连接
+
+### 3. 准确性优化
+- 增加辩论轮数
+- 使用更强的模型
+- 启用在线工具获取最新数据
+
+## 调试模式
+
+### 启用调试
+```python
+ta = TradingAgentsGraph(debug=True, config=config)
+```
+
+### 调试信息
+- 代理执行状态
+- API调用详情
+- 错误堆栈跟踪
+- 性能指标
+
+## 日志和监控
+
+### 日志配置
+- 日志级别: DEBUG, INFO, WARNING, ERROR
+- 日志输出: 控制台和文件
+- 日志轮转: 按大小和时间
+
+### 监控指标
+- API调用次数和成本
+- 代理执行时间
+- 内存使用情况
+- 网络请求状态
