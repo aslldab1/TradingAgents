@@ -57,20 +57,44 @@ export FINNHUB_API_KEY=$YOUR_FINNHUB_API_KEY
 - **免费额度**: 支持免费层使用
 - **获取方式**: 访问 [FinnHub官网](https://finnhub.io/) 注册获取API密钥
 
-### 2. OpenAI API (LLM服务)
+### 2. LLM API配置
+
+#### OpenAI API (默认推荐)
 ```bash
 export OPENAI_API_KEY=$YOUR_OPENAI_API_KEY
 ```
 - **用途**: 所有代理的LLM推理
-- **推荐模型**: 
-  - 深度思考: `o4-mini` (成本较低)
-  - 快速思考: `gpt-4o-mini` (成本较低)
+- **默认配置**: 
+  - 深度思考模型: `o4-mini` (成本较低)
+  - 快速思考模型: `gpt-4o-mini` (成本较低)
 - **获取方式**: 访问 [OpenAI官网](https://platform.openai.com/) 获取API密钥
 
+#### 其他LLM提供商配置
+
+**Google Gemini API**
+```bash
+export GOOGLE_API_KEY=$YOUR_GOOGLE_API_KEY
+```
+- 配置方式: 在代码中设置 `config["llm_provider"] = "google"`
+- 模型示例: `gemini-2.0-flash`, `gemini-1.5-pro`
+
+**Anthropic Claude API**
+```bash
+export ANTHROPIC_API_KEY=$YOUR_ANTHROPIC_API_KEY
+```
+- 配置方式: 在代码中设置 `config["llm_provider"] = "anthropic"`
+- 模型示例: `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`
+
+**Ollama本地模型**
+```bash
+# 无需API密钥，但需要本地安装Ollama
+```
+- 配置方式: 在代码中设置 `config["llm_provider"] = "ollama"`
+- 后端URL: `config["backend_url"] = "http://localhost:11434"`
+
 ### 3. 其他可选API
-- **Google API**: 如需使用Gemini模型
-- **Anthropic API**: 如需使用Claude模型
 - **Reddit API**: 如需获取Reddit数据
+- **Google News API**: 新闻数据获取（通常无需API密钥）
 
 ## 启动方式
 
@@ -96,6 +120,8 @@ print(decision)
 ```
 
 ### 3. 自定义配置启动
+
+#### 使用Google Gemini模型
 ```python
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.default_config import DEFAULT_CONFIG
@@ -113,18 +139,62 @@ ta = TradingAgentsGraph(debug=True, config=config)
 _, decision = ta.propagate("AAPL", "2024-05-10")
 ```
 
+#### 使用Anthropic Claude模型
+```python
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.default_config import DEFAULT_CONFIG
+
+# 创建自定义配置
+config = DEFAULT_CONFIG.copy()
+config["llm_provider"] = "anthropic"  # 使用Anthropic模型
+config["deep_think_llm"] = "claude-3-5-sonnet-20241022"
+config["quick_think_llm"] = "claude-3-5-haiku-20241022"
+config["max_debate_rounds"] = 1
+config["online_tools"] = True
+
+# 初始化并运行
+ta = TradingAgentsGraph(debug=True, config=config)
+_, decision = ta.propagate("NVDA", "2024-05-10")
+```
+
+#### 使用Ollama本地模型
+```python
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.default_config import DEFAULT_CONFIG
+
+# 创建自定义配置
+config = DEFAULT_CONFIG.copy()
+config["llm_provider"] = "ollama"  # 使用Ollama本地模型
+config["backend_url"] = "http://localhost:11434"  # Ollama默认端口
+config["deep_think_llm"] = "llama3.1:8b"  # 本地模型名称
+config["quick_think_llm"] = "llama3.1:8b"
+config["online_tools"] = False  # 本地模型建议使用离线数据
+
+# 初始化并运行
+ta = TradingAgentsGraph(debug=True, config=config)
+_, decision = ta.propagate("TSLA", "2024-05-10")
+```
+
 ## 配置选项详解
 
 ### LLM提供商配置
-- **OpenAI**: `"llm_provider": "openai"`
+- **OpenAI**: `"llm_provider": "openai"` (默认)
 - **Anthropic**: `"llm_provider": "anthropic"`
 - **Google**: `"llm_provider": "google"`
 - **Ollama**: `"llm_provider": "ollama"`
 
 ### 模型配置
 - **深度思考模型**: `"deep_think_llm"` - 用于复杂分析
+  - OpenAI: `"o4-mini"`, `"gpt-4o"`, `"gpt-4.1-mini"`
+  - Google: `"gemini-2.0-flash"`, `"gemini-1.5-pro"`
+  - Anthropic: `"claude-3-5-sonnet-20241022"`
 - **快速思考模型**: `"quick_think_llm"` - 用于快速响应
+  - OpenAI: `"gpt-4o-mini"`, `"gpt-4.1-nano"`
+  - Google: `"gemini-2.0-flash"`
+  - Anthropic: `"claude-3-5-haiku-20241022"`
 - **后端URL**: `"backend_url"` - API端点地址
+  - OpenAI: `"https://api.openai.com/v1"` (默认)
+  - Ollama: `"http://localhost:11434"`
 
 ### 工作流配置
 - **最大辩论轮数**: `"max_debate_rounds"` - 研究员辩论轮数
@@ -173,8 +243,110 @@ pip install overrides bcrypt build importlib-resources jsonschema kubernetes mmh
 **错误**: `API key not found`
 **解决**: 确保正确设置环境变量
 ```bash
+# 检查OpenAI API密钥
 echo $OPENAI_API_KEY
+
+# 检查FinnHub API密钥
 echo $FINNHUB_API_KEY
+
+# 检查Google API密钥（如果使用Gemini）
+echo $GOOGLE_API_KEY
+
+# 检查Anthropic API密钥（如果使用Claude）
+echo $ANTHROPIC_API_KEY
+```
+
+**环境变量设置方法**:
+```bash
+# 方法1: 临时设置（当前终端会话有效）
+export OPENAI_API_KEY="your-api-key-here"
+export FINNHUB_API_KEY="your-finnhub-key-here"
+
+# 方法2: 永久设置（添加到shell配置文件）
+echo 'export OPENAI_API_KEY="your-api-key-here"' >> ~/.bashrc
+echo 'export FINNHUB_API_KEY="your-finnhub-key-here"' >> ~/.bashrc
+source ~/.bashrc
+
+# 方法3: 使用.env文件（需要手动加载）
+# 在项目根目录创建.env文件
+echo "OPENAI_API_KEY=your-api-key-here" > .env
+echo "FINNHUB_API_KEY=your-finnhub-key-here" >> .env
+```
+
+**注意**: 项目目前不自动加载.env文件，需要手动加载或使用其他方法设置环境变量。
+
+### 手动加载.env文件的方法
+
+如果需要使用.env文件，可以通过以下方式手动加载：
+
+#### 方法1: 在代码中手动加载
+```python
+from dotenv import load_dotenv
+import os
+
+# 在项目启动前加载.env文件
+load_dotenv()
+
+# 然后正常使用项目
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.default_config import DEFAULT_CONFIG
+
+ta = TradingAgentsGraph(debug=True, config=DEFAULT_CONFIG.copy())
+_, decision = ta.propagate("NVDA", "2024-05-10")
+```
+
+#### 方法2: 使用python-dotenv命令行工具
+```bash
+# 安装python-dotenv（如果未安装）
+pip install python-dotenv
+
+# 使用dotenv运行项目
+dotenv run python main.py
+# 或
+dotenv run python -m cli.main
+```
+
+#### 方法3: 在shell中加载.env文件
+```bash
+# 使用source命令加载.env文件
+source .env
+python main.py
+```
+
+### 为项目添加自动.env文件支持
+
+如果需要让项目自动加载.env文件，可以修改项目代码：
+
+#### 修改default_config.py
+```python
+import os
+from dotenv import load_dotenv
+
+# 在文件开头加载.env文件
+load_dotenv()
+
+DEFAULT_CONFIG = {
+    # ... 现有配置 ...
+}
+```
+
+#### 修改main.py
+```python
+from dotenv import load_dotenv
+load_dotenv()  # 在导入其他模块前加载.env文件
+
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.default_config import DEFAULT_CONFIG
+# ... 其余代码 ...
+```
+
+#### 修改cli/main.py
+```python
+from dotenv import load_dotenv
+load_dotenv()  # 在导入其他模块前加载.env文件
+
+from typing import Optional
+# ... 其余代码 ...
 ```
 
 ### 5. 网络连接问题
@@ -216,19 +388,67 @@ echo $FINNHUB_API_KEY
 ## 性能优化建议
 
 ### 1. 成本优化
-- 使用较小的模型进行测试（如gpt-4o-mini）
-- 减少辩论轮数
-- 使用缓存数据而非实时数据
+- **模型选择**: 使用较小的模型进行测试
+  - OpenAI: `gpt-4o-mini`, `gpt-4.1-nano` (成本最低)
+  - Google: `gemini-2.0-flash` (免费额度较大)
+  - Anthropic: `claude-3-5-haiku-20241022` (成本较低)
+- **辩论轮数**: 减少 `max_debate_rounds` 和 `max_risk_discuss_rounds`
+- **数据源**: 使用缓存数据而非实时数据 (`online_tools: False`)
+- **本地模型**: 使用Ollama本地模型避免API费用
 
 ### 2. 速度优化
-- 启用并行处理
-- 使用更快的模型
-- 优化网络连接
+- **模型选择**: 使用更快的模型
+  - OpenAI: `gpt-4o-mini` (速度最快)
+  - Google: `gemini-2.0-flash` (响应快速)
+  - 本地模型: Ollama本地部署
+- **并行处理**: 启用代理并行执行
+- **网络优化**: 使用CDN或代理服务器
 
 ### 3. 准确性优化
-- 增加辩论轮数
-- 使用更强的模型
-- 启用在线工具获取最新数据
+- **模型选择**: 使用更强的模型
+  - OpenAI: `gpt-4o`, `o1-preview` (准确性最高)
+  - Google: `gemini-1.5-pro` (分析能力强)
+  - Anthropic: `claude-3-5-sonnet-20241022` (推理能力强)
+- **辩论轮数**: 增加 `max_debate_rounds` 提高分析深度
+- **数据质量**: 启用在线工具获取最新数据 (`online_tools: True`)
+
+### 4. LLM模型选择指南
+
+#### 开发测试阶段
+```python
+# 低成本配置
+config = {
+    "llm_provider": "openai",
+    "deep_think_llm": "gpt-4o-mini",
+    "quick_think_llm": "gpt-4o-mini",
+    "max_debate_rounds": 1,
+    "online_tools": False
+}
+```
+
+#### 生产环境
+```python
+# 高准确性配置
+config = {
+    "llm_provider": "openai", 
+    "deep_think_llm": "gpt-4o",
+    "quick_think_llm": "gpt-4o-mini",
+    "max_debate_rounds": 2,
+    "online_tools": True
+}
+```
+
+#### 本地部署
+```python
+# 无API费用配置
+config = {
+    "llm_provider": "ollama",
+    "backend_url": "http://localhost:11434",
+    "deep_think_llm": "llama3.1:8b",
+    "quick_think_llm": "llama3.1:8b",
+    "online_tools": False
+}
+```
 
 ## 调试模式
 
@@ -255,3 +475,203 @@ ta = TradingAgentsGraph(debug=True, config=config)
 - 代理执行时间
 - 内存使用情况
 - 网络请求状态
+
+## 实际启动经验总结
+
+### 成功启动的完整步骤
+
+#### 1. 环境准备
+```bash
+# 1. 进入项目目录
+cd /path/to/TradingAgents
+
+# 2. 激活虚拟环境
+source tradingagents_env/bin/activate
+
+# 3. 验证Python版本
+python3 --version  # 应该显示Python 3.10+
+```
+
+#### 2. 依赖安装
+```bash
+# 安装所有依赖（推荐使用虚拟环境）
+python3 -m pip install -r requirements.txt
+
+# 如果遇到依赖冲突，可以分批安装
+python3 -m pip install langchain-openai langchain-experimental
+python3 -m pip install langchain_anthropic langchain-google-genai
+python3 -m pip install langgraph pandas yfinance
+python3 -m pip install chromadb chainlit rich questionary
+```
+
+#### 3. 配置API密钥
+```bash
+# 创建.env文件
+cp .env.example .env
+
+# 编辑.env文件，填入真实API密钥
+nano .env
+```
+
+**必需的API密钥**：
+```bash
+# OpenAI API（必需）
+OPENAI_API_KEY=your-openai-api-key-here
+
+# FinnHub API（必需）
+FINNHUB_API_KEY=your-finnhub-api-key-here
+
+# 其他可选API
+GOOGLE_API_KEY=your-google-api-key-here
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+```
+
+#### 4. 启动项目
+
+**方法1: 交互式CLI界面（推荐）**
+```bash
+python3 -m cli.main
+```
+
+**方法2: 编程方式**
+```bash
+python3 main.py
+```
+
+### 常见启动问题及解决方案
+
+#### 问题1: Python版本问题
+**现象**: `python --version` 显示Python 2.7
+**解决**: 使用 `python3` 命令
+```bash
+# 错误方式
+python -m cli.main
+
+# 正确方式
+python3 -m cli.main
+```
+
+#### 问题2: 依赖缺失
+**现象**: `ModuleNotFoundError: No module named 'xxx'`
+**解决**: 安装缺失的依赖
+```bash
+# 安装特定依赖
+python3 -m pip install langchain_anthropic
+python3 -m pip install langchain-google-genai
+python3 -m pip install langgraph
+```
+
+#### 问题3: API密钥未设置
+**现象**: `API key not found` 或认证错误
+**解决**: 检查.env文件配置
+```bash
+# 检查环境变量
+echo $OPENAI_API_KEY
+echo $FINNHUB_API_KEY
+
+# 如果未设置，编辑.env文件
+nano .env
+```
+
+#### 问题4: 模型配置错误
+**现象**: Google认证错误或模型不可用
+**解决**: 使用OpenAI模型（更稳定）
+```python
+# 在main.py中使用默认配置
+config = DEFAULT_CONFIG.copy()
+# 不要修改llm_provider，使用默认的openai
+```
+
+### 启动验证步骤
+
+#### 1. 基础导入测试
+```bash
+python3 -c "
+from dotenv import load_dotenv
+load_dotenv()
+print('✅ .env文件加载成功')
+
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.default_config import DEFAULT_CONFIG
+print('✅ TradingAgents导入成功')
+print('✅ 配置:', DEFAULT_CONFIG['llm_provider'])
+"
+```
+
+#### 2. CLI界面测试
+```bash
+# 启动CLI界面
+python3 -m cli.main
+
+# 应该看到欢迎界面和配置选项
+```
+
+#### 3. 编程方式测试
+```bash
+# 运行main.py
+python3 main.py
+
+# 应该看到分析过程和结果
+```
+
+### 性能优化建议
+
+#### 开发测试阶段
+```python
+# 低成本配置
+config = {
+    "llm_provider": "openai",
+    "deep_think_llm": "gpt-4o-mini",  # 成本较低
+    "quick_think_llm": "gpt-4o-mini",
+    "max_debate_rounds": 1,  # 减少辩论轮数
+    "online_tools": False  # 使用缓存数据
+}
+```
+
+#### 生产环境
+```python
+# 高准确性配置
+config = {
+    "llm_provider": "openai",
+    "deep_think_llm": "gpt-4o",  # 准确性更高
+    "quick_think_llm": "gpt-4o-mini",
+    "max_debate_rounds": 2,  # 增加分析深度
+    "online_tools": True  # 使用实时数据
+}
+```
+
+### 启动成功标志
+
+当看到以下界面时，说明启动成功：
+
+```
+╭────────────────────────── Welcome to TradingAgents ──────────────────────────╮
+│                                                                              │
+│    ______               ___             ___                    __            │
+│   /_  __/________ _____/ (_)___  ____ _/   | ____ ____  ____  / /______      │
+│    / / / ___/ __ `/ __  / / __ \/ __ `/ /| |/ __ `/ _ \/ __ \/ __/ ___/      │
+│   / / / /  / /_/ / /_/ / / / / / /_/ / ___ / /_/ /  __/ / / / /_(__  )       │
+│  /_/ /_/   \__,_/\__,_/_/_/ /_/\__, /_/  |_\__, /\___/_/ /_/\__/____/        │
+│                               /____/      /____/                             │
+│                                                                              │
+│  TradingAgents: Multi-Agents LLM Financial Trading Framework - CLI           │
+│                                                                              │
+╰──────────────── Multi-Agents LLM Financial Trading Framework ────────────────╯
+```
+
+### 使用建议
+
+1. **首次使用**：建议使用默认配置，选择热门股票（如NVDA、AAPL）
+2. **成本控制**：使用gpt-4o-mini模型，减少辩论轮数
+3. **数据质量**：启用online_tools获取最新数据
+4. **调试模式**：设置debug=True查看详细执行过程
+
+### 故障排除清单
+
+- [ ] Python版本 >= 3.10
+- [ ] 虚拟环境已激活
+- [ ] 所有依赖已安装
+- [ ] .env文件已配置
+- [ ] API密钥有效
+- [ ] 网络连接正常
+- [ ] 使用python3命令启动

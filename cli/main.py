@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()  # 在导入其他模块前加载.env文件
+
 from typing import Optional
 import datetime
 import typer

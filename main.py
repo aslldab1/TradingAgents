@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()  # 在导入其他模块前加载.env文件
+
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.default_config import DEFAULT_CONFIG
 
