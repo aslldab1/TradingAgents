@@ -1,0 +1,419 @@
+---
+globs: *.py,**/*.py
+description: 开发规范和最佳实践指南
+---
+
+# TradingAgents 开发规范和最佳实践
+
+## 代码规范
+
+### Python代码风格
+- 遵循PEP 8代码风格指南
+- 使用4个空格缩进，不使用制表符
+- 行长度限制在88个字符以内
+- 使用有意义的变量和函数名
+
+### 类型注解
+```python
+from typing import Dict, List, Optional, Any, Annotated
+
+def process_data(
+    ticker: str,
+    date: str,
+    config: Dict[str, Any],
+    look_back_days: int = 7
+) -> Optional[str]:
+    """处理数据的函数示例"""
+    pass
+```
+
+### 文档字符串
+```python
+def get_market_data(
+    symbol: str,
+    start_date: str,
+    end_date: str
+) -> pd.DataFrame:
+    """
+    获取指定股票的市场数据
+    
+    Args:
+        symbol: 股票代码
+        start_date: 开始日期 (YYYY-MM-DD)
+        end_date: 结束日期 (YYYY-MM-DD)
+    
+    Returns:
+        包含市场数据的DataFrame
+        
+    Raises:
+        ValueError: 当日期格式不正确时
+        ConnectionError: 当无法连接到数据源时
+    """
+    pass
+```
+
+## 项目结构规范
+
+### 模块组织
+- 按功能模块组织代码
+- 每个模块有明确的职责
+- 避免循环导入
+- 使用相对导入
+
+### 文件命名
+- 使用小写字母和下划线
+- 文件名应描述其功能
+- 测试文件以`test_`开头
+- 配置文件以`config`结尾
+
+### 目录结构
+```
+tradingagents/
+├── agents/           # 代理模块
+│   ├── analysts/     # 分析师代理
+│   ├── managers/     # 管理代理
+│   └── utils/        # 代理工具
+├── dataflows/        # 数据流模块
+├── graph/           # 工作流图模块
+└── __init__.py      # 包初始化
+```
+
+## 代理开发规范
+
+### 代理类结构
+```python
+def create_analyst_agent(llm, toolkit):
+    """创建分析师代理的标准模式"""
+    
+    def analyst_node(state):
+        """代理节点函数"""
+        # 1. 提取状态信息
+        current_date = state["trade_date"]
+        ticker = state["company_of_interest"]
+        
+        # 2. 配置工具
+        if toolkit.config["online_tools"]:
+            tools = [toolkit.get_online_tool]
+        else:
+            tools = [toolkit.get_offline_tool]
+        
+        # 3. 定义系统消息
+        system_message = "你是专业的分析师..."
+        
+        # 4. 创建提示模板
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_message),
+            MessagesPlaceholder(variable_name="messages")
+        ])
+        
+        # 5. 绑定工具并执行
+        chain = prompt | llm.bind_tools(tools)
+        response = chain.invoke({"messages": state["messages"]})
+        
+        return {"messages": [response]}
+    
+    return analyst_node
+```
+
+### 代理职责分离
+- 每个代理有明确的专业领域
+- 避免代理间职责重叠
+- 保持代理的独立性
+- 通过标准接口通信
+
+### 工具集成
+```python
+# 在代理中正确使用工具
+if last_message.tool_calls:
+    # 处理工具调用
+    tool_results = []
+    for tool_call in last_message.tool_calls:
+        result = toolkit.execute_tool(tool_call)
+        tool_results.append(result)
+    
+    # 返回工具结果
+    return {"messages": tool_results}
+else:
+    # 继续分析流程
+    return {"messages": [analysis_result]}
+```
+
+## 数据流开发规范
+
+### 数据接口设计
+```python
+def get_data_function(
+    ticker: Annotated[str, "股票代码"],
+    curr_date: Annotated[str, "当前日期 (YYYY-MM-DD)"],
+    look_back_days: Annotated[int, "回看天数"]
+) -> str:
+    """
+    数据获取函数的标准格式
+    
+    Args:
+        ticker: 股票代码
+        curr_date: 当前日期
+        look_back_days: 回看天数
+        
+    Returns:
+        格式化的数据字符串
+    """
+    pass
+```
+
+### 错误处理
+```python
+def safe_data_fetch(func, *args, **kwargs):
+    """安全的数据获取包装器"""
+    try:
+        return func(*args, **kwargs)
+    except Exception as e:
+        print(f"数据获取失败: {e}")
+        return ""  # 返回空字符串作为默认值
+```
+
+### 数据验证
+```python
+def validate_date(date_str: str) -> bool:
+    """验证日期格式"""
+    try:
+        datetime.strptime(date_str, "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+def validate_ticker(ticker: str) -> bool:
+    """验证股票代码格式"""
+    return ticker.isalpha() and len(ticker) <= 5
+```
+
+## 配置管理规范
+
+### 配置结构
+```python
+DEFAULT_CONFIG = {
+    # LLM配置
+    "llm_provider": "openai",
+    "deep_think_llm": "o4-mini",
+    "quick_think_llm": "gpt-4o-mini",
+    
+    # 工作流配置
+    "max_debate_rounds": 1,
+    "max_risk_discuss_rounds": 1,
+    
+    # 数据配置
+    "online_tools": True,
+    "data_dir": "/path/to/data",
+}
+```
+
+### 配置验证
+```python
+def validate_config(config: Dict[str, Any]) -> bool:
+    """验证配置的有效性"""
+    required_keys = ["llm_provider", "deep_think_llm", "quick_think_llm"]
+    
+    for key in required_keys:
+        if key not in config:
+            raise ValueError(f"缺少必需的配置项: {key}")
+    
+    return True
+```
+
+## 测试规范
+
+### 单元测试
+```python
+import unittest
+from tradingagents.dataflows.interface import get_finnhub_news
+
+class TestDataInterface(unittest.TestCase):
+    def test_get_finnhub_news(self):
+        """测试FinnHub新闻获取"""
+        result = get_finnhub_news("AAPL", "2024-05-10", 7)
+        self.assertIsInstance(result, str)
+        self.assertIn("AAPL", result)
+    
+    def test_invalid_date_format(self):
+        """测试无效日期格式"""
+        with self.assertRaises(ValueError):
+            get_finnhub_news("AAPL", "invalid-date", 7)
+```
+
+### 集成测试
+```python
+def test_agent_workflow():
+    """测试完整的代理工作流"""
+    config = DEFAULT_CONFIG.copy()
+    ta = TradingAgentsGraph(debug=True, config=config)
+    
+    # 测试工作流执行
+    _, decision = ta.propagate("AAPL", "2024-05-10")
+    
+    assert decision is not None
+    assert "BUY" in decision or "HOLD" in decision or "SELL" in decision
+```
+
+## 性能优化规范
+
+### 内存管理
+```python
+# 及时释放大对象
+def process_large_data():
+    data = load_large_dataset()
+    try:
+        result = process_data(data)
+        return result
+    finally:
+        del data  # 显式删除大对象
+```
+
+### 并发处理
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+def parallel_data_fetch(tickers, date):
+    """并行获取多个股票的数据"""
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [
+            executor.submit(get_stock_data, ticker, date)
+            for ticker in tickers
+        ]
+        results = [future.result() for future in futures]
+    return results
+```
+
+### 缓存策略
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=128)
+def expensive_calculation(ticker, date):
+    """缓存昂贵的计算"""
+    return perform_heavy_calculation(ticker, date)
+```
+
+## 日志和监控规范
+
+### 日志配置
+```python
+import logging
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('tradingagents.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+```
+
+### 性能监控
+```python
+import time
+from functools import wraps
+
+def monitor_performance(func):
+    """性能监控装饰器"""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        
+        logger.info(f"{func.__name__} 执行时间: {end_time - start_time:.2f}秒")
+        return result
+    return wrapper
+```
+
+## 安全规范
+
+### API密钥管理
+```python
+import os
+from typing import Optional
+
+def get_api_key(key_name: str) -> Optional[str]:
+    """安全获取API密钥"""
+    api_key = os.getenv(key_name)
+    if not api_key:
+        raise ValueError(f"未找到API密钥: {key_name}")
+    return api_key
+```
+
+### 数据验证
+```python
+def sanitize_input(user_input: str) -> str:
+    """清理用户输入"""
+    # 移除潜在的危险字符
+    return user_input.strip().replace('<', '&lt;').replace('>', '&gt;')
+```
+
+## 文档规范
+
+### 代码注释
+```python
+def complex_algorithm(data: List[float]) -> float:
+    """
+    复杂的算法实现
+    
+    这个算法实现了以下步骤:
+    1. 数据预处理
+    2. 特征提取
+    3. 模型预测
+    4. 结果后处理
+    
+    Args:
+        data: 输入数据列表
+        
+    Returns:
+        计算结果
+        
+    Note:
+        该算法的时间复杂度为O(n log n)
+    """
+    # 步骤1: 数据预处理
+    processed_data = preprocess(data)
+    
+    # 步骤2: 特征提取
+    features = extract_features(processed_data)
+    
+    # 步骤3: 模型预测
+    prediction = model.predict(features)
+    
+    # 步骤4: 结果后处理
+    result = postprocess(prediction)
+    
+    return result
+```
+
+### README文档
+- 包含项目概述和安装说明
+- 提供使用示例和API文档
+- 说明配置选项和依赖要求
+- 包含故障排除指南
+
+## 版本控制规范
+
+### Git提交规范
+```bash
+# 提交消息格式
+<type>(<scope>): <description>
+
+# 示例
+feat(agents): 添加新的技术分析师代理
+fix(dataflows): 修复FinnHub API连接问题
+docs(readme): 更新安装说明
+test(workflow): 添加集成测试
+```
+
+### 分支管理
+- `main`: 主分支，包含稳定版本
+- `develop`: 开发分支，用于集成新功能
+- `feature/*`: 功能分支
+- `bugfix/*`: 修复分支
+- `hotfix/*`: 紧急修复分支

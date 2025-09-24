@@ -1,0 +1,103 @@
+---
+alwaysApply: true
+description: TradingAgents项目整体架构和核心能力指南
+---
+
+# TradingAgents 项目整体架构文档
+
+## 项目概述
+TradingAgents是一个基于多代理LLM的金融交易框架，模拟真实交易公司的动态协作过程。通过部署专业化的LLM代理团队，从基本面分析师、情绪专家、技术分析师到交易员、风险管理团队，平台协作评估市场条件并制定交易决策。
+
+## 核心架构分层
+
+### 1. 入口层 (Entry Layer)
+- **主入口**: [main.py](mdc:main.py) - 项目主入口，展示基本使用示例
+- **CLI入口**: [cli/main.py](mdc:cli/main.py) - 命令行界面，提供交互式配置和运行
+- **包入口**: [tradingagents/graph/trading_graph.py](mdc:tradingagents/graph/trading_graph.py) - 核心TradingAgentsGraph类
+
+### 2. 代理层 (Agent Layer)
+位于 `tradingagents/agents/` 目录，包含以下专业代理：
+
+#### 分析师团队 (Analysts)
+- **基本面分析师**: [fundamentals_analyst.py](mdc:tradingagents/agents/analysts/fundamentals_analyst.py) - 评估公司财务和绩效指标
+- **市场分析师**: [market_analyst.py](mdc:tradingagents/agents/analysts/market_analyst.py) - 分析市场趋势和技术指标
+- **新闻分析师**: [news_analyst.py](mdc:tradingagents/agents/analysts/news_analyst.py) - 监控全球新闻和宏观经济指标
+- **社交媒体分析师**: [social_media_analyst.py](mdc:tradingagents/agents/analysts/social_media_analyst.py) - 分析社交媒体和公众情绪
+
+#### 研究团队 (Researchers)
+- **看涨研究员**: [bull_researcher.py](mdc:tradingagents/agents/researchers/bull_researcher.py) - 积极评估投资机会
+- **看跌研究员**: [bear_researcher.py](mdc:tradingagents/agents/researchers/bear_researcher.py) - 批判性评估风险
+- **研究经理**: [research_manager.py](mdc:tradingagents/agents/managers/research_manager.py) - 协调研究团队
+
+#### 交易和风险管理团队
+- **交易员**: [trader.py](mdc:tradingagents/agents/trader/trader.py) - 基于分析制定交易决策
+- **风险经理**: [risk_manager.py](mdc:tradingagents/agents/managers/risk_manager.py) - 评估和管理投资风险
+- **风险辩论者**: [aggresive_debator.py](mdc:tradingagents/agents/risk_mgmt/aggresive_debator.py), [conservative_debator.py](mdc:tradingagents/agents/risk_mgmt/conservative_debator.py), [neutral_debator.py](mdc:tradingagents/agents/risk_mgmt/neutral_debator.py)
+
+### 3. 数据流层 (Data Flow Layer)
+位于 `tradingagents/dataflows/` 目录，提供数据获取和处理能力：
+
+#### 数据源接口
+- **统一接口**: [interface.py](mdc:tradingagents/dataflows/interface.py) - 提供所有数据获取的统一接口
+- **配置管理**: [config.py](mdc:tradingagents/dataflows/config.py) - 数据流配置管理
+
+#### 数据源工具
+- **FinnHub工具**: [finnhub_utils.py](mdc:tradingagents/dataflows/finnhub_utils.py) - 金融数据API
+- **Yahoo Finance工具**: [yfin_utils.py](mdc:tradingagents/dataflows/yfin_utils.py) - 股票数据获取
+- **Google News工具**: [googlenews_utils.py](mdc:tradingagents/dataflows/googlenews_utils.py) - 新闻数据获取
+- **Reddit工具**: [reddit_utils.py](mdc:tradingagents/dataflows/reddit_utils.py) - 社交媒体数据
+- **技术指标工具**: [stockstats_utils.py](mdc:tradingagents/dataflows/stockstats_utils.py) - 技术分析指标
+
+### 4. 工作流层 (Workflow Layer)
+位于 `tradingagents/graph/` 目录，基于LangGraph构建：
+
+#### 核心组件
+- **交易图**: [trading_graph.py](mdc:tradingagents/graph/trading_graph.py) - 主要的TradingAgentsGraph类
+- **图设置**: [setup.py](mdc:tradingagents/graph/setup.py) - 工作流图构建和配置
+- **条件逻辑**: [conditional_logic.py](mdc:tradingagents/graph/conditional_logic.py) - 控制代理间的流程
+- **信号传播**: [propagation.py](mdc:tradingagents/graph/propagation.py) - 处理代理间的信息传递
+- **信号处理**: [signal_processing.py](mdc:tradingagents/graph/signal_processing.py) - 处理和分析交易信号
+- **反思机制**: [reflection.py](mdc:tradingagents/graph/reflection.py) - 学习和改进机制
+
+### 5. 工具层 (Utility Layer)
+- **代理工具**: [agent_utils.py](mdc:tradingagents/agents/utils/agent_utils.py) - 代理通用工具
+- **状态管理**: [agent_states.py](mdc:tradingagents/agents/utils/agent_states.py) - 代理状态定义
+- **记忆系统**: [memory.py](mdc:tradingagents/agents/utils/memory.py) - 代理记忆和学习
+
+## 核心能力
+
+### 1. 多代理协作
+- 基于LangGraph的工作流编排
+- 条件逻辑控制代理间的交互
+- 支持动态辩论和讨论机制
+
+### 2. 数据集成
+- 支持多种金融数据源（FinnHub、Yahoo Finance、Google News、Reddit）
+- 在线和离线数据获取模式
+- 统一的数据接口和缓存机制
+
+### 3. 智能分析
+- 基本面分析（财务数据、公司概况）
+- 技术分析（技术指标、价格模式）
+- 情绪分析（新闻、社交媒体）
+- 风险管理（风险评估、投资组合管理）
+
+### 4. 决策制定
+- 多轮辩论机制
+- 风险-收益权衡
+- 最终交易决策生成
+
+## 工作流程
+
+1. **数据收集**: 各分析师代理并行收集相关数据
+2. **分析阶段**: 各代理基于专业领域进行分析
+3. **研究辩论**: 看涨/看跌研究员进行多轮辩论
+4. **研究整合**: 研究经理整合各方观点
+5. **交易决策**: 交易员基于研究结果制定交易策略
+6. **风险评估**: 风险团队评估和调整策略
+7. **最终执行**: 投资组合经理批准/拒绝交易提案
+
+## 配置系统
+- **默认配置**: [default_config.py](mdc:tradingagents/default_config.py) - 项目默认配置
+- **LLM支持**: 支持OpenAI、Anthropic、Google等多种LLM提供商
+- **灵活配置**: 支持自定义分析师选择、辩论轮数、数据源等

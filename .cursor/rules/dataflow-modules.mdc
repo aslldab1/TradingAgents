@@ -1,0 +1,330 @@
+---
+globs: tradingagents/dataflows/**/*.py
+description: 数据流模块和接口使用指南
+---
+
+# TradingAgents 数据流模块指南
+
+## 数据流架构概述
+
+数据流模块位于 [tradingagents/dataflows/](mdc:tradingagents/dataflows/) 目录，提供统一的数据获取、处理和缓存机制，支持多种金融数据源。
+
+## 核心组件
+
+### 1. 统一接口层
+- **主接口**: [interface.py](mdc:tradingagents/dataflows/interface.py) - 提供所有数据获取的统一接口
+- **配置管理**: [config.py](mdc:tradingagents/dataflows/config.py) - 数据流配置和初始化
+- **工具类**: [utils.py](mdc:tradingagents/dataflows/utils.py) - 通用工具函数
+
+### 2. 数据源工具
+
+#### FinnHub数据工具
+- **文件**: [finnhub_utils.py](mdc:tradingagents/dataflows/finnhub_utils.py)
+- **功能**: 金融数据API集成
+- **数据源**: FinnHub API
+- **支持数据类型**:
+  - 公司新闻和事件
+  - 内部人员交易
+  - 内部人员情绪
+  - 公司概况信息
+
+#### Yahoo Finance工具
+- **文件**: [yfin_utils.py](mdc:tradingagents/dataflows/yfin_utils.py)
+- **功能**: 股票数据获取和处理
+- **数据源**: Yahoo Finance API
+- **支持数据类型**:
+  - 历史价格数据
+  - 实时股价信息
+  - 公司基本信息
+  - 财务指标数据
+
+#### Google News工具
+- **文件**: [googlenews_utils.py](mdc:tradingagents/dataflows/googlenews_utils.py)
+- **功能**: 新闻数据获取和分析
+- **数据源**: Google News RSS
+- **支持数据类型**:
+  - 公司相关新闻
+  - 行业新闻
+  - 宏观经济新闻
+  - 新闻情绪分析
+
+#### Reddit工具
+- **文件**: [reddit_utils.py](mdc:tradingagents/dataflows/reddit_utils.py)
+- **功能**: 社交媒体数据获取
+- **数据源**: Reddit API
+- **支持数据类型**:
+  - 股票讨论热度
+  - 社区情绪分析
+  - 热门话题追踪
+  - 用户观点收集
+
+#### 技术指标工具
+- **文件**: [stockstats_utils.py](mdc:tradingagents/dataflows/stockstats_utils.py)
+- **功能**: 技术分析指标计算
+- **依赖**: stockstats库
+- **支持指标**:
+  - MACD (移动平均收敛散度)
+  - RSI (相对强弱指数)
+  - 布林带
+  - 移动平均线
+  - 其他技术指标
+
+## 数据接口使用指南
+
+### 新闻和情绪数据
+
+#### 获取FinnHub新闻
+```python
+from tradingagents.dataflows.interface import get_finnhub_news
+
+news_data = get_finnhub_news(
+    ticker="AAPL",
+    curr_date="2024-05-10",
+    look_back_days=7
+)
+```
+
+#### 获取公司内部人员情绪
+```python
+from tradingagents.dataflows.interface import get_finnhub_company_insider_sentiment
+
+sentiment = get_finnhub_company_insider_sentiment(
+    ticker="AAPL",
+    curr_date="2024-05-10",
+    look_back_days=30
+)
+```
+
+#### 获取Google新闻
+```python
+from tradingagents.dataflows.interface import get_google_news
+
+news = get_google_news(
+    ticker="AAPL",
+    curr_date="2024-05-10",
+    look_back_days=7
+)
+```
+
+#### 获取Reddit数据
+```python
+from tradingagents.dataflows.interface import get_reddit_global_news, get_reddit_company_news
+
+# 获取全局Reddit讨论
+global_news = get_reddit_global_news(
+    ticker="AAPL",
+    curr_date="2024-05-10",
+    look_back_days=7
+)
+
+# 获取公司特定Reddit讨论
+company_news = get_reddit_company_news(
+    ticker="AAPL",
+    curr_date="2024-05-10",
+    look_back_days=7
+)
+```
+
+### 财务数据
+
+#### 获取财务报表
+```python
+from tradingagents.dataflows.interface import (
+    get_simfin_balance_sheet,
+    get_simfin_cashflow,
+    get_simfin_income_statements
+)
+
+# 资产负债表
+balance_sheet = get_simfin_balance_sheet(
+    ticker="AAPL",
+    curr_date="2024-05-10",
+    look_back_days=365
+)
+
+# 现金流量表
+cashflow = get_simfin_cashflow(
+    ticker="AAPL",
+    curr_date="2024-05-10",
+    look_back_days=365
+)
+
+# 利润表
+income_stmt = get_simfin_income_statements(
+    ticker="AAPL",
+    curr_date="2024-05-10",
+    look_back_days=365
+)
+```
+
+### 技术分析数据
+
+#### 获取技术指标窗口数据
+```python
+from tradingagents.dataflows.interface import get_stock_stats_indicators_window
+
+# 获取MACD指标
+macd_data = get_stock_stats_indicators_window(
+    symbol="AAPL",
+    indicator="macd",
+    curr_date="2024-05-10",
+    look_back_days=30,
+    online=True
+)
+
+# 获取RSI指标
+rsi_data = get_stock_stats_indicators_window(
+    symbol="AAPL",
+    indicator="rsi",
+    curr_date="2024-05-10",
+    look_back_days=30,
+    online=True
+)
+```
+
+#### 获取单个技术指标
+```python
+from tradingagents.dataflows.interface import get_stockstats_indicator
+
+# 获取当前RSI值
+current_rsi = get_stockstats_indicator(
+    symbol="AAPL",
+    indicator="rsi",
+    curr_date="2024-05-10",
+    online=True
+)
+```
+
+### 市场数据
+
+#### 获取Yahoo Finance数据窗口
+```python
+from tradingagents.dataflows.interface import get_YFin_data_window
+
+# 获取价格数据窗口
+price_data = get_YFin_data_window(
+    symbol="AAPL",
+    curr_date="2024-05-10",
+    look_back_days=30
+)
+```
+
+#### 获取Yahoo Finance历史数据
+```python
+from tradingagents.dataflows.interface import get_YFin_data
+
+# 获取指定日期范围的数据
+historical_data = get_YFin_data(
+    symbol="AAPL",
+    start_date="2024-01-01",
+    end_date="2024-05-10"
+)
+```
+
+## 配置管理
+
+### 数据流配置
+```python
+from tradingagents.dataflows.config import get_config, set_config
+
+# 获取当前配置
+config = get_config()
+
+# 设置新配置
+new_config = {
+    "data_dir": "/path/to/data",
+    "online_tools": True
+}
+set_config(new_config)
+```
+
+### 环境变量配置
+```bash
+# 设置数据目录
+export TRADINGAGENTS_DATA_DIR="/path/to/data"
+
+# 设置结果目录
+export TRADINGAGENTS_RESULTS_DIR="/path/to/results"
+```
+
+## 数据缓存机制
+
+### 缓存策略
+- **在线模式**: 实时获取最新数据
+- **离线模式**: 使用缓存的历史数据
+- **混合模式**: 优先使用缓存，缺失时在线获取
+
+### 缓存管理
+```python
+# 启用在线工具
+config["online_tools"] = True
+
+# 使用离线数据
+config["online_tools"] = False
+```
+
+## 错误处理
+
+### 常见错误类型
+1. **API限制错误**: 超出API调用限制
+2. **网络连接错误**: 网络超时或连接失败
+3. **数据格式错误**: 返回数据格式不正确
+4. **认证错误**: API密钥无效或过期
+
+### 错误处理策略
+```python
+try:
+    data = get_finnhub_news("AAPL", "2024-05-10", 7)
+except Exception as e:
+    print(f"获取新闻数据失败: {e}")
+    # 使用备用数据源或默认值
+    data = ""
+```
+
+## 性能优化
+
+### 并发处理
+- 使用ThreadPoolExecutor进行并发数据获取
+- 并行处理多个数据源
+- 异步处理长时间运行的任务
+
+### 数据压缩
+- 压缩存储历史数据
+- 减少内存使用
+- 提高数据加载速度
+
+### 缓存优化
+- 智能缓存策略
+- 数据过期管理
+- 缓存命中率优化
+
+## 扩展和定制
+
+### 添加新数据源
+1. 在dataflows目录创建新的工具文件
+2. 实现数据获取和处理逻辑
+3. 在interface.py中添加统一接口
+4. 更新配置和错误处理
+
+### 自定义数据处理
+1. 继承现有工具类
+2. 重写数据处理方法
+3. 添加自定义过滤和转换逻辑
+4. 集成到现有工作流
+
+## 调试和监控
+
+### 数据获取监控
+- 记录API调用次数和成本
+- 监控数据获取成功率
+- 跟踪数据质量和完整性
+
+### 性能监控
+- 数据获取响应时间
+- 缓存命中率
+- 内存使用情况
+
+### 日志记录
+- 详细的操作日志
+- 错误和异常记录
+- 性能指标记录
